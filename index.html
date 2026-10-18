@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="om">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#101512">
+  <meta name="description" content="Naol Gangster 3D open-world driving game">
+  <title>Naol Gangster</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Main game canvas is created by Three.js -->
+
+  <!-- TOP HUD -->
+  <header id="hud">
+    <div class="hud-brand">
+      <strong>NAOL <span>GANGSTER</span></strong>
+      <small>OPEN WORLD • ADDIS ABABA</small>
+    </div>
+
+    <div class="hud-right">
+      <div class="hud-panel">
+        <span id="spd">0</span>
+        <small>KM/H</small>
+        <div class="hud-sub">
+          GEAR <b id="gr">P</b>
+          <span id="engineState">ENGINE OFF</span>
+        </div>
+        <div id="rpm"><div id="rpmb"></div></div>
+      </div>
+      <button id="pauseBtn" aria-label="Pause game">Ⅱ</button>
+    </div>
+  </header>
+
+  <!-- GAME STATUS -->
+  <section id="stats" class="glass">
+    <div class="stat-row">
+      <span>PLAYER</span><b id="playerState">READY</b>
+    </div>
+    <div class="stat-row">
+      <span>VEHICLE</span><b>LEOPARD 8</b>
+    </div>
+    <div class="stat-row">
+      <span>HEALTH</span><b id="healthValue">100%</b>
+    </div>
+    <div class="stat-row">
+      <span>MONEY</span><b id="moneyValue">ETB 0</b>
+    </div>
+    <div class="stat-row">
+      <span>SCORE</span><b id="sc">0</b>
+    </div>
+  </section>
+
+  <!-- CAMERA OPTIONS -->
+  <nav id="cams" aria-label="Camera options"></nav>
+
+  <!-- MAP -->
+  <canvas id="mm" width="150" height="150"></canvas>
+
+  <!-- VEHICLE CONTROLS -->
+  <section id="driveControls">
+    <div id="wheel" aria-label="Steering wheel">
+      <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="43"
+                fill="#15191a" stroke="#777" stroke-width="9"/>
+        <circle cx="50" cy="50" r="37"
+                fill="none" stroke="#d6b65c" stroke-width="2"/>
+        <path d="M50 15V50M17 36L50 50L83 36M50 50V81"
+              fill="none" stroke="#777" stroke-width="8"
+              stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="12"
+                fill="#222" stroke="#d6b65c" stroke-width="2"/>
+        <path d="M45 43L50 38L55 43"
+              fill="none" stroke="#eee" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <button class="pedal brake" id="pb" data-t="b">
+      <span>▥</span><small>BRAKE</small>
+    </button>
+
+    <button class="pedal gas" id="pg" data-t="g">
+      <span>▲</span><small>ACCELERATE</small>
+    </button>
+  </section>
+
+  <!-- PLAYER ON-FOOT CONTROLS -->
+  <section id="playerControls">
+    <div id="movePad" aria-label="Move player">
+      <button id="moveUp" data-move="forward">▲</button>
+      <button id="moveLeft" data-move="left">◀</button>
+      <button id="moveDown" data-move="back">▼</button>
+      <button id="moveRight" data-move="right">▶</button>
+    </div>
+
+    <div id="actionButtons">
+      <button id="sprintBtn">RUN</button>
+      <button id="jumpBtn">JUMP</button>
+      <button id="interactBtn">INTERACT</button>
+      <button id="enterExitBtn">ENTER / EXIT</button>
+      <button id="doorBtn">OPEN DOOR</button>
+    </div>
+  </section>
+
+  <!-- VEHICLE INFORMATION -->
+  <section id="vehiclePanel" class="glass">
+    <div class="vehicle-heading">
+      <b>LEOPARD 8</b>
+      <span id="vehicleStatus">PARKED</span>
+    </div>
+    <div class="vehicle-data">
+      <span>RPM <b id="rpmValue">900</b></span>
+      <span>FUEL <b id="fuelValue">100%</b></span>
+      <span>MODE <b id="driveMode">NORMAL</b></span>
+    </div>
+    <button id="engineBtn">START ENGINE</button>
+  </section>
+
+  <!-- MENU -->
+  <div id="menu">
+    <div id="mp">
+      <h2 id="mt">NAOL GANGSTER</h2>
+      <div id="mc"></div>
+      <button id="mx">BACK TO GAME</button>
+    </div>
+  </div>
+
+  <!-- START SCREEN -->
+  <div id="start">
+    <div id="card">
+      <div class="logo-mark">NG</div>
+      <h1>NAOL <span>GANGSTER</span></h1>
+      <p>YOUR CITY. YOUR RIDE. YOUR WORLD.</p>
+      <div class="start-info">
+        <span>3D OPEN WORLD</span>
+        <span>LEOPARD 8</span>
+        <span>ADDIS ABABA</span>
+      </div>
+      <button id="go">START GAME</button>
+      <button id="up">UPLOAD YOUR PHOTO</button>
+      <input id="file" type="file" accept="image/*" hidden>
+      <small>WASD / ARROWS • SPACE = BRAKE • C = CAMERA</small>
+    </div>
+  </div>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Game modules: order matters -->
+  <script src="world.js"></script>
+  <script src="car.js"></script>
+  <script src="player.js"></script>
+  <script src="game.js"></script>
+
+</body>
+</html>
