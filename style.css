@@ -1,0 +1,634 @@
+
+:root {
+  --gold: #e6c56b;
+  --gold-bright: #ffdf82;
+  --green: #36c98b;
+  --red: #ff5757;
+  --panel: rgba(12, 17, 18, .84);
+  --border: rgba(230, 197, 107, .72);
+  --text: #f7f7f4;
+  --muted: #aeb7b7;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #101512;
+  color: var(--text);
+  font-family: Inter, Arial, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+}
+
+canvas {
+  display: block;
+}
+
+button {
+  color: var(--text);
+  background: linear-gradient(145deg, #252b2b, #111616);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 10px 13px;
+  font: 700 12px Arial, sans-serif;
+  letter-spacing: .35px;
+  cursor: pointer;
+  touch-action: none;
+  box-shadow: 0 3px 12px #0005;
+}
+
+button:active,
+button.on {
+  background: var(--gold);
+  color: #171713;
+}
+
+button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+#hud {
+  position: fixed;
+  z-index: 3;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.hud-brand,
+.hud-panel,
+#pauseBtn,
+.glass {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 5px 20px #0004;
+}
+
+.hud-brand {
+  padding: 11px 14px;
+}
+
+.hud-brand strong {
+  display: block;
+  font-size: 17px;
+  letter-spacing: 1.2px;
+}
+
+.hud-brand strong span,
+#card h1 span {
+  color: var(--gold-bright);
+}
+
+.hud-brand small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.hud-right {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.hud-panel {
+  min-width: 130px;
+  padding: 7px 12px;
+}
+
+#spd {
+  display: inline-block;
+  min-width: 46px;
+  font-size: 31px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.hud-panel > small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.hud-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 10px;
+}
+
+#engineState {
+  color: var(--gold-bright);
+  font-size: 9px;
+}
+
+#rpm {
+  height: 5px;
+  margin-top: 7px;
+  overflow: hidden;
+  background: #343a39;
+  border-radius: 5px;
+}
+
+#rpmb {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #36c98b, #ffdf82, #ff5757);
+}
+
+#pauseBtn {
+  width: 42px;
+  height: 42px;
+  font-size: 17px;
+}
+
+#stats {
+  position: fixed;
+  z-index: 3;
+  top: 102px;
+  left: 12px;
+  width: 160px;
+  padding: 10px;
+  pointer-events: none;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid #ffffff12;
+  font-size: 10px;
+}
+
+.stat-row:last-child {
+  border-bottom: 0;
+}
+
+.stat-row span {
+  color: var(--muted);
+}
+
+.stat-row b {
+  color: var(--gold-bright);
+}
+
+#cams {
+  position: fixed;
+  z-index: 4;
+  top: 94px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 112px;
+}
+
+#cams button {
+  padding: 8px 9px;
+  font-size: 10px;
+}
+
+#mm {
+  position: fixed;
+  z-index: 3;
+  top: 275px;
+  left: 12px;
+  width: 112px;
+  height: 112px;
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  background: #17211b;
+  pointer-events: none;
+}
+
+#driveControls {
+  position: fixed;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+#wheel {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  width: clamp(100px, 19vw, 155px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  touch-action: none;
+  pointer-events: auto;
+  filter: drop-shadow(0 6px 10px #0007);
+}
+
+#wheel svg {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pedal {
+  position: absolute;
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: auto;
+  border-radius: 12px;
+  background: repeating-linear-gradient(
+    135deg, #343a3b 0 6px, #202525 6px 12px
+  );
+}
+
+.pedal span {
+  font-size: 21px;
+}
+
+.pedal small {
+  font-size: 9px;
+}
+
+#pb {
+  right: 105px;
+  width: 58px;
+  height: 82px;
+}
+
+#pg {
+  right: 20px;
+  width: 68px;
+  height: 120px;
+}
+
+#vehiclePanel {
+  position: fixed;
+  z-index: 3;
+  right: 12px;
+  bottom: 158px;
+  width: 190px;
+  padding: 10px;
+  pointer-events: auto;
+}
+
+.vehicle-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.vehicle-heading > span {
+  color: var(--green);
+  font-size: 9px;
+}
+
+.vehicle-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.vehicle-data b {
+  color: white;
+}
+
+#engineBtn {
+  width: 100%;
+  font-size: 10px;
+}
+
+#playerControls {
+  display: none;
+  position: fixed;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+#movePad {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 138px;
+  height: 138px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 5px;
+  pointer-events: auto;
+}
+
+#movePad button {
+  padding: 4px;
+  background: #121919db;
+}
+
+#moveUp { grid-column: 2; grid-row: 1; }
+#moveLeft { grid-column: 1; grid-row: 2; }
+#moveDown { grid-column: 2; grid-row: 3; }
+#moveRight { grid-column: 3; grid-row: 2; }
+
+#actionButtons {
+  position: absolute;
+  right: 15px;
+  bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+  width: min(240px, 45vw);
+  pointer-events: auto;
+}
+
+#actionButtons button {
+  min-width: 88px;
+  font-size: 10px;
+}
+
+#menu,
+#start {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+#menu {
+  display: none;
+  background: #050807eF;
+}
+
+#mp,
+#card {
+  width: min(100%, 390px);
+  padding: 25px;
+  border: 1px solid var(--gold);
+  border-radius: 19px;
+  background: linear-gradient(145deg, #202725f5, #080b0af7);
+  box-shadow: 0 15px 60px #0009;
+  text-align: center;
+}
+
+#mt {
+  margin: 0 0 18px;
+  color: var(--gold-bright);
+}
+
+#mc {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+#mx {
+  width: 100%;
+}
+
+#start {
+  z-index: 20;
+  background:
+    linear-gradient(180deg, #173d2c88, #080b0cf0),
+    #101512;
+  overflow-y: auto;
+}
+
+#card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 13px;
+  margin: auto;
+}
+
+.logo-mark {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border: 2px solid var(--gold);
+  border-radius: 18px;
+  color: var(--gold-bright);
+  font-size: 24px;
+  font-weight: 900;
+  transform: rotate(-5deg);
+}
+
+#card h1 {
+  margin: 0;
+  font-size: clamp(26px, 6vw, 38px);
+}
+
+#card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.start-info {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+}
+
+.start-info span {
+  padding: 6px 8px;
+  border: 1px solid #ffffff25;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+#go,
+#up {
+  width: 100%;
+  padding: 13px;
+}
+
+#go {
+  background: linear-gradient(135deg, #ffe49b, #c79d37);
+  color: #171713;
+}
+
+#card > small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+@media (orientation: portrait) {
+  .hud-brand {
+    padding: 8px;
+  }
+
+  .hud-brand strong {
+    font-size: 13px;
+  }
+
+  .hud-brand small {
+    font-size: 7px;
+  }
+
+  #stats {
+    top: 95px;
+    width: 137px;
+  }
+
+  #mm {
+    top: 258px;
+    width: 95px;
+    height: 95px;
+  }
+
+  #cams {
+    top: 92px;
+  }
+
+  #vehiclePanel {
+    right: 10px;
+    bottom: 155px;
+    width: 158px;
+    padding: 8px;
+  }
+
+  #wheel {
+    left: 12px;
+    bottom: 17px;
+    width: 112px;
+  }
+
+  #pb {
+    right: 83px;
+    width: 49px;
+    height: 72px;
+  }
+
+  #pg {
+    right: 12px;
+    width: 61px;
+    height: 100px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  #hud {
+    top: 7px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .hud-brand {
+    padding: 6px 9px;
+  }
+
+  .hud-brand strong {
+    font-size: 13px;
+  }
+
+  .hud-brand small {
+    font-size: 7px;
+  }
+
+  .hud-panel {
+    padding: 5px 8px;
+  }
+
+  #spd {
+    font-size: 24px;
+  }
+
+  #stats {
+    top: 70px;
+    left: 8px;
+    width: 132px;
+    padding: 6px;
+  }
+
+  #mm {
+    top: 230px;
+    left: 8px;
+    width: 82px;
+    height: 82px;
+  }
+
+  #cams {
+    top: 65px;
+    right: 8px;
+    gap: 4px;
+  }
+
+  #cams button {
+    padding: 5px 7px;
+  }
+
+  #wheel {
+    left: 12px;
+    bottom: 10px;
+    width: 95px;
+  }
+
+  #pb {
+    right: 83px;
+    bottom: 10px;
+    height: 62px;
+  }
+
+  #pg {
+    right: 10px;
+    bottom: 10px;
+    height: 86px;
+  }
+
+  #vehiclePanel {
+    right: 95px;
+    bottom: 82px;
+    width: 165px;
+    padding: 7px;
+  }
+
+  .vehicle-data {
+    margin: 5px 0;
+  }
+
+  #actionButtons {
+    right: 10px;
+    bottom: 10px;
+    width: 220px;
+  }
+}
