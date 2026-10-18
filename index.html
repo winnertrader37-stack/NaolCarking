@@ -4,155 +4,170 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="theme-color" content="#101512">
-  <meta name="description" content="Naol Gangster 3D open-world driving game">
+        content="width=device-width, initial-scale=1,
+        maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#090b0e">
   <title>Naol Gangster</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Main game canvas is created by Three.js -->
+  <!-- Loading screen -->
+  <div id="loading">
+    <div class="load-card">
+      <b>NAOL GANGSTER</b>
+      <span id="load-msg">Magaalaa 3D fe'aa jira...</span>
+    </div>
+  </div>
 
-  <!-- TOP HUD -->
-  <header id="hud">
-    <div class="hud-brand">
-      <strong>NAOL <span>GANGSTER</span></strong>
-      <small>OPEN WORLD • ADDIS ABABA</small>
+  <!-- Game title and speed dashboard -->
+  <div id="hud">
+    <div class="brand">
+      <b>NAOL <em>GANGSTER</em></b>
+      <small>OPEN WORLD · ADDIS ABABA</small>
     </div>
 
-    <div class="hud-right">
-      <div class="hud-panel">
-        <span id="spd">0</span>
-        <small>KM/H</small>
-        <div class="hud-sub">
-          GEAR <b id="gr">P</b>
-          <span id="engineState">ENGINE OFF</span>
-        </div>
-        <div id="rpm"><div id="rpmb"></div></div>
+    <div class="speed-card">
+      <strong id="speed">0</strong>
+      <span>KM/H</span>
+      <div class="gearline">
+        <span>GEAR</span>
+        <b id="gear">P</b>
+        <span id="engine-label">ENGINE OFF</span>
       </div>
-      <button id="pauseBtn" aria-label="Pause game">Ⅱ</button>
+      <div class="meter">
+        <i id="speed-meter"></i>
+      </div>
     </div>
-  </header>
+  </div>
 
-  <!-- GAME STATUS -->
-  <section id="stats" class="glass">
-    <div class="stat-row">
-      <span>PLAYER</span><b id="playerState">READY</b>
-    </div>
-    <div class="stat-row">
-      <span>VEHICLE</span><b>LEOPARD 8</b>
-    </div>
-    <div class="stat-row">
-      <span>HEALTH</span><b id="healthValue">100%</b>
-    </div>
-    <div class="stat-row">
-      <span>MONEY</span><b id="moneyValue">ETB 0</b>
-    </div>
-    <div class="stat-row">
-      <span>SCORE</span><b id="sc">0</b>
-    </div>
-  </section>
+  <!-- Player information -->
+  <div id="player-card" class="glass">
+    <div><span>PLAYER</span><b id="player-state">READY</b></div>
+    <div><span>VEHICLE</span><b>LEOPARD 8</b></div>
+    <div><span>HEALTH</span><b id="health">100%</b></div>
+    <div><span>MONEY</span><b id="money">ETB 0</b></div>
+    <div><span>SCORE</span><b id="score">0</b></div>
+  </div>
 
-  <!-- CAMERA OPTIONS -->
-  <nav id="cams" aria-label="Camera options"></nav>
-
-  <!-- MAP -->
-  <canvas id="mm" width="150" height="150"></canvas>
-
-  <!-- VEHICLE CONTROLS -->
-  <section id="driveControls">
-    <div id="wheel" aria-label="Steering wheel">
-      <svg viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="43"
-                fill="#15191a" stroke="#777" stroke-width="9"/>
-        <circle cx="50" cy="50" r="37"
-                fill="none" stroke="#d6b65c" stroke-width="2"/>
-        <path d="M50 15V50M17 36L50 50L83 36M50 50V81"
-              fill="none" stroke="#777" stroke-width="8"
-              stroke-linecap="round"/>
-        <circle cx="50" cy="50" r="12"
-                fill="#222" stroke="#d6b65c" stroke-width="2"/>
-        <path d="M45 43L50 38L55 43"
-              fill="none" stroke="#eee" stroke-width="2"/>
-      </svg>
-    </div>
-
-    <button class="pedal brake" id="pb" data-t="b">
-      <span>▥</span><small>BRAKE</small>
-    </button>
-
-    <button class="pedal gas" id="pg" data-t="g">
-      <span>▲</span><small>ACCELERATE</small>
-    </button>
-  </section>
-
-  <!-- PLAYER ON-FOOT CONTROLS -->
-  <section id="playerControls">
-    <div id="movePad" aria-label="Move player">
-      <button id="moveUp" data-move="forward">▲</button>
-      <button id="moveLeft" data-move="left">◀</button>
-      <button id="moveDown" data-move="back">▼</button>
-      <button id="moveRight" data-move="right">▶</button>
-    </div>
-
-    <div id="actionButtons">
-      <button id="sprintBtn">RUN</button>
-      <button id="jumpBtn">JUMP</button>
-      <button id="interactBtn">INTERACT</button>
-      <button id="enterExitBtn">ENTER / EXIT</button>
-      <button id="doorBtn">OPEN DOOR</button>
-    </div>
-  </section>
-
-  <!-- VEHICLE INFORMATION -->
-  <section id="vehiclePanel" class="glass">
-    <div class="vehicle-heading">
+  <!-- Vehicle dashboard -->
+  <div id="vehicle-card" class="glass">
+    <div class="vc-head">
       <b>LEOPARD 8</b>
-      <span id="vehicleStatus">PARKED</span>
+      <span id="parked">PARKED</span>
     </div>
-    <div class="vehicle-data">
-      <span>RPM <b id="rpmValue">900</b></span>
-      <span>FUEL <b id="fuelValue">100%</b></span>
-      <span>MODE <b id="driveMode">NORMAL</b></span>
-    </div>
-    <button id="engineBtn">START ENGINE</button>
-  </section>
 
-  <!-- MENU -->
-  <div id="menu">
-    <div id="mp">
-      <h2 id="mt">NAOL GANGSTER</h2>
-      <div id="mc"></div>
-      <button id="mx">BACK TO GAME</button>
+    <div class="vc-stats">
+      <span>RPM <b id="rpm">0</b></span>
+      <span>FUEL <b id="fuel">100%</b></span>
     </div>
+
+    <div class="mode-label">
+      MODE
+      <b id="mode">NORMAL</b>
+    </div>
+
+    <button id="engine-btn">START ENGINE</button>
   </div>
 
-  <!-- START SCREEN -->
-  <div id="start">
-    <div id="card">
-      <div class="logo-mark">NG</div>
-      <h1>NAOL <span>GANGSTER</span></h1>
-      <p>YOUR CITY. YOUR RIDE. YOUR WORLD.</p>
-      <div class="start-info">
-        <span>3D OPEN WORLD</span>
-        <span>LEOPARD 8</span>
-        <span>ADDIS ABABA</span>
-      </div>
-      <button id="go">START GAME</button>
-      <button id="up">UPLOAD YOUR PHOTO</button>
-      <input id="file" type="file" accept="image/*" hidden>
-      <small>WASD / ARROWS • SPACE = BRAKE • C = CAMERA</small>
-    </div>
+  <!-- Camera choices -->
+  <div id="camera-buttons">
+    <button data-camera="chase" class="active">CHASE</button>
+    <button data-camera="front">FRONT</button>
+    <button data-camera="cockpit">COCKPIT</button>
+    <button data-camera="top">TOP</button>
+    <button data-camera="free">FREE</button>
   </div>
 
-  <!-- Three.js -->
+  <!-- Realistic-style steering wheel -->
+  <div id="wheel" aria-label="Steering wheel">
+    <svg viewBox="0 0 120 120"
+         aria-hidden="true">
+      <defs>
+        <linearGradient id="rim"
+                        x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#e0d2bb"/>
+          <stop offset=".48" stop-color="#6b6258"/>
+          <stop offset="1" stop-color="#d9cbb5"/>
+        </linearGradient>
+        <linearGradient id="hub"
+                        x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#e0d0b6"/>
+          <stop offset="1" stop-color="#93816b"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Outer padded rim -->
+      <circle cx="60" cy="60" r="52"
+              fill="#181a1b"
+              stroke="#77736e"
+              stroke-width="8"/>
+
+      <!-- Leather rim -->
+      <circle cx="60" cy="60" r="45"
+              fill="none"
+              stroke="url(#rim)"
+              stroke-width="7"/>
+
+      <!-- Three-spoke wheel -->
+      <g stroke="#b7a58d"
+         stroke-width="10"
+         stroke-linecap="round">
+        <path d="M60 60 L60 19"/>
+        <path d="M60 60 L26 42"/>
+        <path d="M60 60 L94 42"/>
+      </g>
+
+      <!-- Metallic spoke details -->
+      <g stroke="#33312e" stroke-width="2.5">
+        <path d="M30 43 L48 53"/>
+        <path d="M90 43 L72 53"/>
+      </g>
+
+      <!-- Central hub -->
+      <rect x="39" y="46" width="42" height="29"
+            rx="8" fill="url(#hub)"
+            stroke="#51483e" stroke-width="2"/>
+
+      <path d="M46 60 H74 M60 51 V69"
+            stroke="#574c40" stroke-width="2.5"/>
+
+      <!-- Small center emblem -->
+      <circle cx="60" cy="60" r="5"
+              fill="#e2d4bc"
+              stroke="#51483e"
+              stroke-width="1.5"/>
+    </svg>
+  </div>
+
+  <!-- Mobile pedals -->
+  <div id="pedals">
+    <button id="brake">
+      ▥
+      <small>BRAKE</small>
+    </button>
+
+    <button id="accelerate">
+      ▲
+      <small>ACCELERATE</small>
+    </button>
+  </div>
+
+  <!-- Enter and exit the car -->
+  <button id="exit-btn">E · ENTER / EXIT</button>
+
+  <div id="touch-hint">
+    WASD / ARROWS · SPACE BRAKE · C CAMERA · E ENTER/EXIT
+  </div>
+
+  <div id="message" role="status"></div>
+
+  <!-- Three.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-  <!-- Game modules: order matters -->
+  <!-- Game files: keep this order -->
   <script src="world.js"></script>
   <script src="car.js"></script>
-  <script src="player.js"></script>
   <script src="game.js"></script>
 
 </body>
