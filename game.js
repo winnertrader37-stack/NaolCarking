@@ -1,691 +1,603 @@
 
-/* ====================================================
-   NAOL GANGSTER - MAIN GAME CONTROLLER
-   Load order:
-   Three.js -> world.js -> car.js -> player.js -> game.js
-   ==================================================== */
+/* =====================================================
+   NAOL GANGSTER — MAIN GAME ENGINE
+   Smooth steering, driving, engine, cameras and touch
+   ===================================================== */
 (() => {
   "use strict";
 
   const $ = id => document.getElementById(id);
-  const car = window.NaolCar.root;
-  const player = window.NaolPlayer;
-  const { scene: S, camera: cam, renderer: R } = window.NaolWorld;
 
-  let started = false;
-  let paused = true;
-  let driving = false;
-  let engineOn = false;
+  const {
+    renderer, scene, camera, box, mat, rand
+  } = window.NAOL;
+
+  const {
+    car, wheels, steering, headL, headR
+  } = window.NAOL_CAR;
+
+  let engine = false;
+  let paused = false;
+  let inside = false;
+
+  let x = 0;
+  let z = 0;
+  let heading = 0;
   let speed = 0;
-  let steering = 0;
-  let steeringTarget = 0;
-  let yaw = 0;
+  let steer = 0;
+  let steerTarget = 0;
   let rpm = 900;
-  let fuel = 100;
-  let health = 100;
-  let money = 0;
   let score = 0;
-  let cameraMode = 0;
-  let headlights = false;
-  let driveMode = "NORMAL";
+  let health = 100;
+  let fuel = 100;
 
-  const keys = Object.create(null);
-  const touch = Object.create(null);
+  let cameraMode = "chase";
+  let freeYaw = 0;
+  let freePitch = 0.25;
 
+  const keys = {};
+  const touch = { gas: false, brake: false };
   const clock = new THREE.Clock();
-  const forward = new THREE.Vector3();
-  const desiredCamera = new THREE.Vector3();
-  const lookTarget = new THREE.Vector3();
 
-  const cameraNames = [
-    "CHASE", "FRONT", "COCKPIT", "TOP", "FREE"
+  const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
+  const clamp = (n, min, max) =>
+    Math.max(min, Math.min(max, n));
+
+  function message(text) {
+    const el = $("message");
+    el.textContent = text;
+    el.style.display = "block";
+
+    clearTimeout(message.timer);
+
+    message.timer = setTimeout(() => {
+      el.style.display = "none";
+    }, 2200);
+  }
+
+  // Traffic vehicles
+  const traffic = [];
+  const trafficColors = [
+    0xeee9df,
+    0x9b2f29,
+    0x253f55,
+    0x8c8b83,
+    0x252729
   ];
 
-  let freeYaw = 0;
-  let freePitch = 0.3;
-  let dragging = false;
-  let previousPointer = null;
-  let audioContext = null;
-  let engineOscillator = null;
-  let engineGain = null;
+  for (let i = 0; i < 14; i++) {
+    const g = new THREE.Group();
+    scene.add(g);
 
-  // ---------- Start and pause ----------
-
-  $("go").addEventListener("click", () => {
-    if (started) return;
-
-    started = true;
-    paused = false;
-    $("start").style.display = "none";
-
-    player.create();
-    player.setPosition(car.position.x + 2.8, car.position.z - 1);
-
-    try {
-      audioContext = new (
-        window.AudioContext || window.webkitAudioContext
-      )();
-
-      engineOscillator = audioContext.createOscillator();
-      engineGain = audioContext.createGain();
-
-      engineOscillator.type = "sawtooth";
-      engineOscillator.frequency.value = 45;
-      engineGain.gain.value = 0;
-
-      engineOscillator.connect(engineGain);
-      engineGain.connect(audioContext.destination);
-      engineOscillator.start();
-    } catch (error) {
-      console.warn("Audio is unavailable on this device.");
-    }
-  });
-
-  function pauseGame() {
-    if (!started) return;
-    paused = !paused;
-    $("menu").style.display = paused ? "flex" : "none";
-    if (paused && audioContext?.state === "running") {
-      audioContext.suspend();
-    } else if (!paused && audioContext?.state === "suspended") {
-      audioContext.resume();
-    }
-  }
-
-  $("pauseBtn").addEventListener("click", pauseGame);
-  $("mx").addEventListener("click", () => {
-    paused = false;
-    $("menu").style.display = "none";
-    if (audioContext?.state === "suspended") {
-      audioContext.resume();
-    }
-  });
-
-  // ---------- Menu ----------
-
-  const menuOptions = {
-    "Character": () => `
-      <button data-action="photo">UPLOAD PHOTO</button>
-      <button data-action="walk">ON FOOT</button>
-    `,
-    "Vehicle": () => `
-      <button data-action="engine">ENGINE ON / OFF</button>
-      <button data-action="lights">HEADLIGHTS</button>
-      <button data-action="sport">SPORT MODE</button>
-      <button data-action="normal">NORMAL MODE</button>
-    `,
-    "Camera": () => cameraNames.map((name, i) =>
-      `<button data-camera="${i}">${name}</button>`
-    ).join(""),
-    "Locations": () => `
-      <button data-location="city">ADDIS CITY</button>
-      <button data-location="hotel">NAOL HOTEL</button>
-      <button data-location="garage">NAOL GARAGE</button>
-      <button data-location="countryside">COUNTRYSIDE</button>
-    `,
-    "Settings": () => `
-      <button data-action="lights">TOGGLE LIGHTS</button>
-      <button data-action="photo">CHANGE PHOTO</button>
-    `
-  };
-
-  $("mt").textContent = "NAOL GANGSTER";
-  $("mc").innerHTML = Object.keys(menuOptions).map(name =>
-    `<button data-tab="${name}">${name}</button>`
-  ).join("");
-
-  $("mc").addEventListener("click", event => {
-    const button = event.target.closest("button");
-    if (!button) return;
-
-    if (button.dataset.tab) {
-      $("mt").textContent = button.dataset.tab;
-      $("mc").innerHTML = menuOptions[button.dataset.tab]();
-      return;
-    }
-
-    if (button.dataset.camera !== undefined) {
-      setCamera(Number(button.dataset.camera));
-      return;
-    }
-
-    if (button.dataset.location) {
-      const point = window.NaolWorld.locations[
-        button.dataset.location
-      ];
-
-      car.position.set(point.x, 0, point.z);
-      speed = 0;
-
-      if (driving) {
-        yaw = car.rotation.y;
-      } else {
-        player.setPosition(point.x + 3, point.z);
-      }
-      return;
-    }
-
-    switch (button.dataset.action) {
-      case "engine":
-        toggleEngine();
-        break;
-      case "lights":
-        headlights = window.NaolCar.toggleHeadlights();
-        break;
-      case "sport":
-        driveMode = "SPORT";
-        break;
-      case "normal":
-        driveMode = "NORMAL";
-        break;
-      case "photo":
-        $("file").click();
-        break;
-      case "walk":
-        exitVehicle();
-        break;
-    }
-  });
-
-  $("up").addEventListener("click", () => $("file").click());
-
-  $("file").addEventListener("change", event => {
-    const file = event.target.files?.[0];
-    if (file) player.setPhoto(file);
-  });
-
-  // ---------- Camera selector ----------
-
-  const cameraButtons = [];
-
-  cameraNames.forEach((name, index) => {
-    const button = document.createElement("button");
-    button.textContent = name;
-    button.addEventListener("click", () => setCamera(index));
-    $("cams").appendChild(button);
-    cameraButtons.push(button);
-  });
-
-  function setCamera(index) {
-    cameraMode = (index + cameraNames.length) %
-      cameraNames.length;
-
-    cameraButtons.forEach((button, i) => {
-      button.classList.toggle("on", i === cameraMode);
-    });
-  }
-
-  setCamera(0);
-
-  // ---------- Keyboard ----------
-
-  addEventListener("keydown", event => {
-    keys[event.code] = true;
-
-    if (event.code === "KeyC" && !event.repeat) {
-      setCamera(cameraMode + 1);
-    }
-
-    if (event.code === "KeyE" && !event.repeat) {
-      toggleVehicle();
-    }
-
-    if (event.code === "KeyF" && !event.repeat) {
-      toggleNearestDoor();
-    }
-
-    if (event.code === "KeyL" && !event.repeat) {
-      headlights = window.NaolCar.toggleHeadlights();
-    }
-
-    if (event.code === "Escape" && !event.repeat) {
-      pauseGame();
-    }
-  });
-
-  addEventListener("keyup", event => {
-    keys[event.code] = false;
-  });
-
-  // ---------- Mobile pedal controls ----------
-
-  document.querySelectorAll("[data-t]").forEach(button => {
-    const action = button.dataset.t;
-
-    button.addEventListener("pointerdown", event => {
-      event.preventDefault();
-      touch[action] = true;
-      button.setPointerCapture?.(event.pointerId);
-    });
-
-    ["pointerup", "pointercancel", "lostpointercapture"].forEach(name => {
-      button.addEventListener(name, () => {
-        touch[action] = false;
-      });
-    });
-  });
-
-  // Smooth steering wheel
-  const wheelElement = $("wheel");
-  let wheelPointer = null;
-
-  function updateWheel(event) {
-    const rect = wheelElement.getBoundingClientRect();
-    const dx = event.clientX - (rect.left + rect.width / 2);
-    const dy = event.clientY - (rect.top + rect.height / 2);
-
-    steeringTarget = THREE.MathUtils.clamp(
-      dx / (rect.width * 0.42), -1, 1
+    box(
+      1.8, 0.65, 3.8,
+      mat(trafficColors[i % trafficColors.length], 0.4, 0.25),
+      0, 0.65, 0, g
     );
 
-    const angle = Math.atan2(dy, dx) + Math.PI / 2;
-    wheelElement.style.transform =
-      `rotate(${THREE.MathUtils.clamp(angle, -1.5, 1.5)}rad)`;
+    box(
+      1.5, 0.55, 1.8,
+      mat(0x263642, 0.22, 0.2),
+      0, 1.15, -0.2, g
+    );
+
+    for (const sx of [-0.88, 0.88]) {
+      for (const sz of [-1.2, 1.2]) {
+        const w = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.25, 0.25, 0.18, 12),
+          mat(0x111111)
+        );
+
+        w.rotation.z = Math.PI / 2;
+        w.position.set(sx, 0.28, sz);
+        g.add(w);
+      }
+    }
+
+    traffic.push({
+      g,
+      x: (i % 2 ? 1 : -1) * (8 + rand() * 8),
+      z: -220 + i * 34,
+      speed: 5 + rand() * 9,
+      dir: i % 2 ? 1 : -1
+    });
   }
 
-  wheelElement.addEventListener("pointerdown", event => {
-    wheelPointer = event.pointerId;
-    wheelElement.setPointerCapture(event.pointerId);
-    updateWheel(event);
+  // Street lights
+  for (let zz = -600; zz < 600; zz += 42) {
+    for (const side of [-1, 1]) {
+      const px = side * 15;
+
+      box(
+        0.16, 5, 0.16,
+        mat(0x343839), px, 2.5, zz
+      );
+
+      box(
+        1.4, 0.12, 0.12,
+        mat(0x343839), px + side * 0.6, 4.9, zz
+      );
+
+      const bulb = new THREE.PointLight(
+        0xffdf9a, 0.22, 15
+      );
+
+      bulb.position.set(px + side * 1.1, 4.7, zz);
+      scene.add(bulb);
+    }
+  }
+
+  /* -----------------------------------------------------
+     STEERING WHEEL
+     Drag the wheel horizontally to steer.
+     On release, it smoothly returns to centre.
+     ----------------------------------------------------- */
+  const wheelEl = $("wheel");
+
+  let wheelPointer = null;
+  let wheelStart = 0;
+  let wheelBase = 0;
+  let wheelVisual = 0;
+
+  wheelEl.addEventListener("pointerdown", e => {
+    if (paused) return;
+
+    wheelPointer = e.pointerId;
+    wheelStart = e.clientX;
+    wheelBase = wheelVisual;
+
+    wheelEl.setPointerCapture(e.pointerId);
+    e.preventDefault();
   });
 
-  wheelElement.addEventListener("pointermove", event => {
-    if (wheelPointer === event.pointerId) updateWheel(event);
+  wheelEl.addEventListener("pointermove", e => {
+    if (wheelPointer !== e.pointerId) return;
+
+    const movement = e.clientX - wheelStart;
+
+    wheelVisual = clamp(
+      wheelBase + movement * 0.018,
+      -2.15,
+      2.15
+    );
+
+    steerTarget = wheelVisual / 2.15;
+    e.preventDefault();
   });
 
   function releaseWheel() {
     wheelPointer = null;
-    steeringTarget = 0;
-    wheelElement.style.transition = "transform .2s ease";
-    wheelElement.style.transform = "rotate(0rad)";
+    steerTarget = 0;
   }
 
-  wheelElement.addEventListener("pointerup", releaseWheel);
-  wheelElement.addEventListener("pointercancel", releaseWheel);
+  wheelEl.addEventListener("pointerup", releaseWheel);
+  wheelEl.addEventListener("pointercancel", releaseWheel);
+  wheelEl.addEventListener("lostpointercapture", releaseWheel);
 
-  // Player movement controls
-  document.querySelectorAll("[data-move]").forEach(button => {
-    const action = button.dataset.move;
+  // Accelerator and brake: hold to use
+  function bindHold(id, key) {
+    const el = $(id);
 
-    button.addEventListener("pointerdown", event => {
-      event.preventDefault();
-      player.setMove(action, true);
-      button.setPointerCapture?.(event.pointerId);
+    el.addEventListener("pointerdown", e => {
+      touch[key] = true;
+
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch (_) {}
+
+      e.preventDefault();
     });
 
-    ["pointerup", "pointercancel", "lostpointercapture"].forEach(name => {
-      button.addEventListener(name, () => {
-        player.setMove(action, false);
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => {
+      el.addEventListener(ev, () => {
+        touch[key] = false;
       });
     });
+  }
+
+  bindHold("accelerate", "gas");
+  bindHold("brake", "brake");
+
+  // Keyboard controls
+  addEventListener("keydown", e => {
+    keys[e.code] = true;
+
+    if ([
+      "ArrowUp", "ArrowDown", "ArrowLeft",
+      "ArrowRight", "Space"
+    ].includes(e.code)) {
+      e.preventDefault();
+    }
+
+    if (e.repeat) return;
+
+    if (e.code === "KeyC") cycleCamera();
+    if (e.code === "KeyE") toggleEnterExit();
+    if (e.code === "KeyP") paused = !paused;
+    if (e.code === "KeyL") toggleLights();
   });
 
-  $("sprintBtn").addEventListener("pointerdown", () => {
-    player.setMove("run", true);
+  addEventListener("keyup", e => {
+    keys[e.code] = false;
   });
-  ["pointerup", "pointercancel", "pointerleave"].forEach(name => {
-    $("sprintBtn").addEventListener(name, () => {
-      player.setMove("run", false);
+
+  // Prevent stuck keys if the browser loses focus
+  addEventListener("blur", () => {
+    Object.keys(keys).forEach(key => keys[key] = false);
+    touch.gas = false;
+    touch.brake = false;
+    releaseWheel();
+  });
+
+  // Camera controls
+  function setCamera(mode) {
+    cameraMode = mode;
+    inside = mode === "cockpit";
+
+    document.querySelectorAll("[data-camera]").forEach(button => {
+      button.classList.toggle(
+        "active",
+        button.dataset.camera === mode
+      );
+    });
+
+    if (mode === "cockpit") {
+      $("player-state").textContent = "DRIVING";
+    } else if (!inside) {
+      $("player-state").textContent = engine ? "DRIVING" : "READY";
+    }
+  }
+
+  function cycleCamera() {
+    const modes = [
+      "chase", "front", "cockpit", "top", "free"
+    ];
+
+    setCamera(
+      modes[(modes.indexOf(cameraMode) + 1) % modes.length]
+    );
+  }
+
+  document.querySelectorAll("[data-camera]").forEach(button => {
+    button.addEventListener("click", () => {
+      setCamera(button.dataset.camera);
     });
   });
 
-  $("jumpBtn").addEventListener("click", () => {
-    // Placeholder: add ground collision and jump physics in a later version.
-    $("playerState").textContent = "JUMP NOT READY";
-  });
-
-  $("interactBtn").addEventListener("click", toggleVehicle);
-  $("enterExitBtn").addEventListener("click", toggleVehicle);
-  $("doorBtn").addEventListener("click", toggleNearestDoor);
-
-  // ---------- Vehicle state ----------
-
-  function toggleEngine() {
-    engineOn = !engineOn;
-
-    if (!engineOn) {
+  // Start and stop engine
+  $("engine-btn").addEventListener("click", () => {
+    if (!engine) {
+      engine = true;
+      message("Engine started.");
+    } else {
+      engine = false;
       speed = 0;
-      $("engineBtn").textContent = "START ENGINE";
-      $("engineState").textContent = "ENGINE OFF";
+      message("Engine stopped.");
+    }
+
+    updateDashboard();
+  });
+
+  function toggleLights() {
+    const on = headL.intensity < 0.1;
+
+    headL.intensity = on ? 2 : 0;
+    headR.intensity = on ? 2 : 0;
+
+    message(on ? "Headlights ON" : "Headlights OFF");
+  }
+
+  // Enter or exit the vehicle.
+  // This prototype switches driving/camera mode; it does
+  // not yet animate a separate walking character.
+  function toggleEnterExit() {
+    if (inside) {
+      inside = false;
+      setCamera("chase");
+      $("player-state").textContent = "ON FOOT";
+      message("Konkolaataa keessaa baate.");
     } else {
-      $("engineBtn").textContent = "STOP ENGINE";
-      $("engineState").textContent = "ENGINE ON";
+      inside = true;
+      setCamera("cockpit");
+      $("player-state").textContent = "DRIVING";
+      message("Konkolaataa keessa seente.");
     }
   }
 
-  $("engineBtn").addEventListener("click", toggleEngine);
+  // The button already exists in index.html.
+  $("exit-btn").addEventListener("click", toggleEnterExit);
 
-  function toggleVehicle() {
-    if (driving) {
-      exitVehicle();
-    } else {
-      enterVehicle();
-    }
-  }
+  function updateDashboard() {
+    const kmh = Math.round(Math.abs(speed) * 3.6);
 
-  function enterVehicle() {
-    if (!started || driving) return;
+    $("speed").textContent = kmh;
+    $("rpm").textContent = engine ? rpm : 0;
+    $("engine-label").textContent =
+      engine ? "ENGINE ON" : "ENGINE OFF";
 
-    const dx = player.root.position.x - car.position.x;
-    const dz = player.root.position.z - car.position.z;
-
-    // Entry proximity check
-    if (Math.hypot(dx, dz) > 5) {
-      $("playerState").textContent = "MOVE CLOSER";
-      return;
-    }
-
-    driving = true;
-    player.setVisible(false);
-
-    // Driver door is the left front door
-    if (!window.NaolCar.doors[0].open) {
-      window.NaolCar.toggleDoor(0);
-    }
-
-    if (!engineOn) toggleEngine();
-
-    $("playerState").textContent = "DRIVING";
-    $("vehicleStatus").textContent = "ACTIVE";
-    $("driveControls").style.display = "block";
-    $("playerControls").style.display = "none";
-  }
-
-  function exitVehicle() {
-    if (!driving) return;
-    if (Math.abs(speed) > 1.5) {
-      $("playerState").textContent = "STOP VEHICLE FIRST";
-      return;
-    }
-
-    driving = false;
-    speed = 0;
-
-    player.setVisible(true);
-
-    const side = 2.2;
-    const px = car.position.x - Math.cos(yaw) * side;
-    const pz = car.position.z + Math.sin(yaw) * side;
-
-    player.setPosition(px, pz);
-    player.rotation = yaw;
-
-    if (window.NaolCar.doors[0].open) {
-      window.NaolCar.toggleDoor(0);
-    }
-
-    $("playerState").textContent = "ON FOOT";
-    $("vehicleStatus").textContent = "PARKED";
-    $("driveControls").style.display = "none";
-    $("playerControls").style.display = "block";
-  }
-
-  function toggleNearestDoor() {
-    if (!started) return;
-
-    if (driving && Math.abs(speed) > 1.5) {
-      $("vehicleStatus").textContent = "STOP FIRST";
-      return;
-    }
-
-    // The nearest side/front door can be refined with door distances.
-    const doors = window.NaolCar.doors;
-    const index = driving ? 0 : 0;
-    window.NaolCar.toggleDoor(index);
-  }
-
-  // ---------- Minimap ----------
-
-  const mapCanvas = $("mm");
-  const mapContext = mapCanvas.getContext("2d");
-
-  function drawMap() {
-    const ctx = mapContext;
-    const w = mapCanvas.width;
-    const h = mapCanvas.height;
-
-    ctx.fillStyle = "#18251d";
-    ctx.fillRect(0, 0, w, h);
-
-    const centerX = w / 2;
-    const centerY = h / 2;
-    const scale = 0.22;
-    const worldX = driving ? car.position.x : player.root.position.x;
-    const worldZ = driving ? car.position.z : player.root.position.z;
-
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.rotate(-yaw);
-
-    ctx.strokeStyle = "#59635d";
-    ctx.lineWidth = 4;
-
-    [-70, 0, 70].forEach(x => {
-      ctx.beginPath();
-      ctx.moveTo((x - worldX) * scale, -h);
-      ctx.lineTo((x - worldX) * scale, h);
-      ctx.stroke();
-    });
-
-    [0, 140, -140].forEach(z => {
-      ctx.beginPath();
-      ctx.moveTo(-w, (z - worldZ) * scale);
-      ctx.lineTo(w, (z - worldZ) * scale);
-      ctx.stroke();
-    });
-
-    ctx.restore();
-
-    // Player/vehicle indicator
-    ctx.fillStyle = "#ffe082";
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "10px Arial";
-    ctx.fillText("N", w - 14, 12);
-  }
-
-  // ---------- Main physics ----------
-
-  function updateVehicle(dt) {
-    if (!driving || !engineOn) {
-      speed *= Math.exp(-dt * 1.8);
-      return;
-    }
-
-    const gas = keys.KeyW || keys.ArrowUp || touch.g;
-    const brake = keys.KeyS || keys.ArrowDown || touch.b;
-    const left = keys.KeyA || keys.ArrowLeft;
-    const right = keys.KeyD || keys.ArrowRight;
-    const handbrake = keys.Space;
-
-    let acceleration = 0;
-
-    if (gas && fuel > 0) {
-      acceleration += driveMode === "SPORT" ? 18 : 11;
-      fuel = Math.max(0, fuel - dt * 0.015);
-    }
-
-    if (brake) {
-      acceleration -= speed > 0 ? 24 : -7;
-    }
-
-    if (handbrake) {
-      speed *= Math.exp(-dt * 7);
-    }
-
-    acceleration -= speed * 0.65;
-    speed += acceleration * dt;
-    speed = THREE.MathUtils.clamp(speed, -9, 55);
-
-    const keySteering = Number(left) - Number(right);
-    const desiredSteering = keySteering || steeringTarget;
-
-    steering += (desiredSteering - steering) *
-      (1 - Math.exp(-dt * 5));
-
-    yaw += speed * 0.013 * steering * dt;
-
-    forward.set(Math.sin(yaw), 0, Math.cos(yaw));
-
-    car.position.x += forward.x * speed * dt;
-    car.position.z += forward.z * speed * dt;
-    car.rotation.y = yaw;
-
-    // Simple boundary keeps the player in the generated game area.
-    car.position.x = THREE.MathUtils.clamp(
-      car.position.x, -850, 850
-    );
-    car.position.z = THREE.MathUtils.clamp(
-      car.position.z, -1050, 1050
-    );
-
-    rpm = THREE.MathUtils.clamp(
-      900 + Math.abs(speed) * 110 + (gas ? 900 : 0),
-      900, 6500
-    );
-
-    window.NaolCar.update(dt, speed, steering);
-  }
-
-  function updateHUD() {
-    $("spd").textContent = Math.round(Math.abs(speed) * 3.6);
-    $("gr").textContent = !driving ? "P" :
+    $("gear").textContent =
+      !engine ? "P" :
       speed < -0.5 ? "R" :
-      Math.abs(speed) < 0.5 ? "N" :
-      Math.min(8, Math.floor(Math.abs(speed) / 7) + 1);
+      kmh < 2 ? "D" :
+      kmh < 40 ? "2" : "3";
 
-    $("rpmb").style.width = `${rpm / 65}%`;
-    $("rpmValue").textContent = Math.round(rpm);
-    $("fuelValue").textContent = `${Math.round(fuel)}%`;
-    $("healthValue").textContent = `${Math.round(health)}%`;
-    $("moneyValue").textContent = `ETB ${money}`;
-    $("sc").textContent = score;
-    $("driveMode").textContent = driveMode;
+    $("speed-meter").style.width =
+      clamp(kmh / 2.1, 0, 100) + "%";
 
-    $("engineState").textContent = engineOn
-      ? "ENGINE ON" : "ENGINE OFF";
+    $("parked").textContent =
+      !engine ? "PARKED" :
+      kmh > 2 ? "DRIVING" : "READY";
+
+    $("health").textContent = Math.round(health) + "%";
+    $("fuel").textContent = Math.round(fuel) + "%";
+    $("score").textContent = score;
   }
 
-  function updateCamera(dt) {
-    const target = driving ? car : player.root;
-    if (!target) return;
+  /* -----------------------------------------------------
+     GAME PHYSICS, STEERING AND CAMERA
+     ----------------------------------------------------- */
+  function update(dt) {
+    if (paused) return;
 
-    const x = target.position.x;
-    const z = target.position.z;
-    const angle = driving ? yaw : player.rotation;
+    const gas =
+      keys.KeyW || keys.ArrowUp || touch.gas;
 
-    forward.set(Math.sin(angle), 0, Math.cos(angle));
+    const brake =
+      keys.KeyS || keys.ArrowDown ||
+      touch.brake || keys.Space;
 
-    if (cameraMode === 0) {
-      desiredCamera.set(
-        x - forward.x * 8,
-        4.2,
-        z - forward.z * 8
-      );
-      lookTarget.set(x + forward.x * 4, 1.4, z + forward.z * 4);
-    } else if (cameraMode === 1) {
-      desiredCamera.set(
-        x + forward.x * 2,
-        2.1,
-        z + forward.z * 2
-      );
-      lookTarget.set(x + forward.x * 20, 1.2, z + forward.z * 20);
-    } else if (cameraMode === 2 && driving) {
-      desiredCamera.set(
-        x - forward.x * 0.1,
-        1.72,
-        z - forward.z * 0.1
-      );
-      lookTarget.set(x + forward.x * 25, 1.5, z + forward.z * 25);
-    } else if (cameraMode === 3) {
-      desiredCamera.set(x, 35, z + 0.1);
-      lookTarget.set(x, 0, z);
+    const left =
+      keys.KeyA || keys.ArrowLeft;
+
+    const right =
+      keys.KeyD || keys.ArrowRight;
+
+    if (engine) {
+      if (gas && fuel > 0) {
+        speed += 17 * dt;
+        fuel = Math.max(0, fuel - 0.0018 * dt);
+      }
+
+      if (brake) {
+        speed -= 26 * dt;
+      }
+
+      if (!gas && !brake) {
+        speed *= Math.exp(-0.55 * dt);
+      }
     } else {
-      desiredCamera.set(
-        x + Math.sin(freeYaw) * 10 * Math.cos(freePitch),
-        1.5 + 10 * Math.sin(freePitch),
-        z + Math.cos(freeYaw) * 10 * Math.cos(freePitch)
-      );
-      lookTarget.set(x, 1.2, z);
+      speed *= Math.exp(-4 * dt);
     }
 
-    const smooth = 1 - Math.exp(-dt * 5);
-    cam.position.lerp(desiredCamera, smooth);
-    cam.lookAt(lookTarget);
-  }
+    speed = clamp(speed, -8, 58);
 
-  // Free camera drag
-  R.domElement.addEventListener("pointerdown", event => {
-    if (cameraMode !== 4) return;
-    dragging = true;
-    previousPointer = { x: event.clientX, y: event.clientY };
-  });
+    // Keyboard steering overrides wheel while pressed
+    const keySteer = (left ? 1 : 0) - (right ? 1 : 0);
 
-  addEventListener("pointermove", event => {
-    if (!dragging || !previousPointer || cameraMode !== 4) return;
+    if (keySteer !== 0) {
+      steerTarget = keySteer;
+    } else if (wheelPointer === null) {
+      steerTarget *= Math.exp(-3.8 * dt);
+    }
 
-    freeYaw -= (event.clientX - previousPointer.x) * 0.008;
-    freePitch = THREE.MathUtils.clamp(
-      freePitch + (event.clientY - previousPointer.y) * 0.005,
-      -0.2, 1.2
+    // Smooth steering response
+    steer += (
+      steerTarget - steer
+    ) * (1 - Math.exp(-7 * dt));
+
+    // Wheel animation returns smoothly to its centre
+    wheelVisual += (
+      steer * 2.15 - wheelVisual
+    ) * (1 - Math.exp(-8 * dt));
+
+    wheelEl.style.transform =
+      `rotate(${wheelVisual * 180 / Math.PI}deg)`;
+
+    // Vehicle movement
+    heading += steer * speed * 0.013 * dt;
+
+    x += Math.sin(heading) * speed * dt;
+    z += Math.cos(heading) * speed * dt;
+
+    car.position.set(x, 0, z);
+    car.rotation.y = heading;
+
+    // Wheel spin and front-wheel steering
+    wheels.forEach(w => {
+      w.pivot.rotation.x += speed * dt * 1.8;
+
+      if (w.front) {
+        w.pivot.rotation.y = -steer * 0.45;
+      }
+    });
+
+    // Cockpit steering wheel animation
+    steering.rotation.z = -steer * 0.72;
+
+    // Engine RPM
+    const kmh = Math.round(Math.abs(speed) * 3.6);
+
+    rpm = engine
+      ? Math.round(850 + Math.abs(speed) * 75 + (gas ? 700 : 0))
+      : 0;
+
+    // Traffic movement and collision
+    traffic.forEach(t => {
+      t.z += t.speed * t.dir * dt;
+
+      if (t.z > z + 280) t.z = z - 300;
+      if (t.z < z - 300) t.z = z + 280;
+
+      t.g.position.set(t.x, 0, t.z);
+
+      const dx = x - t.x;
+      const dz = z - t.z;
+
+      if (dx * dx + dz * dz < 5.5 && Math.abs(speed) > 2) {
+        speed *= 0.86;
+        score += 1;
+      }
+    });
+
+    // Headlight controls
+    if (keys.KeyL) {
+      headL.intensity = 2;
+      headR.intensity = 2;
+    }
+
+    updateDashboard();
+
+    // Forward direction
+    const forward = v3(
+      Math.sin(heading), 0, Math.cos(heading)
     );
 
-    previousPointer = { x: event.clientX, y: event.clientY };
-  });
+    let target;
+    let camPos;
 
-  addEventListener("pointerup", () => {
-    dragging = false;
-    previousPointer = null;
-  });
+    if (cameraMode === "cockpit") {
+      // Driver viewpoint inside the cabin
+      camPos = car.localToWorld(v3(-0.15, 1.72, 0.2));
+      target = car.localToWorld(v3(0, 1.48, 18));
+      camera.position.copy(camPos);
 
-  // ---------- Animation loop ----------
-
-  function loop() {
-    requestAnimationFrame(loop);
-
-    const dt = Math.min(clock.getDelta(), 0.04);
-
-    if (!started || paused) {
-      R.render(S, cam);
-      return;
-    }
-
-    updateVehicle(dt);
-
-    if (!driving) {
-      player.update(dt, false);
-    }
-
-    if (engineGain && audioContext?.state === "running") {
-      engineOscillator.frequency.setTargetAtTime(
-        Math.max(35, rpm / 35),
-        audioContext.currentTime,
-        0.08
+    } else if (cameraMode === "front") {
+      // Camera in front of the vehicle, facing it
+      camPos = v3(
+        x + forward.x * 8,
+        3,
+        z + forward.z * 8
       );
 
-      engineGain.gain.setTargetAtTime(
-        engineOn ? 0.025 : 0,
-        audioContext.currentTime,
-        0.1
+      target = v3(x, 1.1, z);
+
+      camera.position.lerp(
+        camPos, 1 - Math.exp(-5 * dt)
+      );
+
+    } else if (cameraMode === "top") {
+      camPos = v3(x, 55, z + 0.1);
+      target = v3(x, 0, z);
+
+      camera.position.lerp(
+        camPos, 1 - Math.exp(-4 * dt)
+      );
+
+      camera.up.set(0, 0, -1);
+
+    } else if (cameraMode === "free") {
+      const cp = Math.cos(freePitch);
+
+      camPos = v3(
+        x + Math.sin(heading + freeYaw) * 14 * cp,
+        2 + Math.sin(freePitch) * 14,
+        z + Math.cos(heading + freeYaw) * 14 * cp
+      );
+
+      target = v3(x, 1, z);
+
+      camera.position.lerp(
+        camPos, 1 - Math.exp(-4 * dt)
+      );
+
+    } else {
+      // Chase camera follows behind the SUV
+      camPos = v3(
+        x - forward.x * 10,
+        4.6,
+        z - forward.z * 10
+      );
+
+      target = v3(
+        x + forward.x * 5,
+        1.1,
+        z + forward.z * 5
+      );
+
+      camera.position.lerp(
+        camPos, 1 - Math.exp(-4.5 * dt)
       );
     }
 
-    updateCamera(dt);
-    updateHUD();
-    drawMap();
-    R.render(S, cam);
+    if (cameraMode !== "top") {
+      camera.up.set(0, 1, 0);
+    }
+
+    camera.lookAt(target);
   }
 
-  // Initial player and UI state
-  player.create();
-  player.setVisible(true);
-  $("driveControls").style.display = "block";
-  $("playerControls").style.display = "none";
-  $("vehicleStatus").textContent = "PARKED";
-  $("playerState").textContent = "READY";
+  // Drag the screen to rotate Free camera
+  let freeDrag = false;
+  let lastX = 0;
+  let lastY = 0;
 
-  loop();
+  renderer.domElement.addEventListener("pointerdown", e => {
+    if (cameraMode !== "free") return;
+
+    freeDrag = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    try {
+      renderer.domElement.setPointerCapture(e.pointerId);
+    } catch (_) {}
+  });
+
+  renderer.domElement.addEventListener("pointermove", e => {
+    if (!freeDrag) return;
+
+    freeYaw -= (e.clientX - lastX) * 0.008;
+
+    freePitch = clamp(
+      freePitch + (e.clientY - lastY) * 0.006,
+      -0.15, 1.1
+    );
+
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  renderer.domElement.addEventListener("pointerup", () => {
+    freeDrag = false;
+  });
+
+  renderer.domElement.addEventListener("pointercancel", () => {
+    freeDrag = false;
+  });
+
+  // Main animation loop
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const dt = Math.min(clock.getDelta(), 0.05);
+
+    try {
+      update(dt);
+      renderer.render(scene, camera);
+
+      const loading = $("loading");
+
+      if (loading.style.display !== "none") {
+        loading.style.display = "none";
+        $("player-state").textContent = "READY";
+      }
+
+    } catch (err) {
+      console.error("Naol Gangster frame error:", err);
+
+      $("load-msg").textContent =
+        "Game error: " + err.message;
+
+      $("loading").style.display = "grid";
+    }
+  }
+
+  // Initial camera position
+  camera.position.set(0, 5, -11);
+  camera.lookAt(0, 1, 12);
+
+  setCamera("chase");
+  updateDashboard();
+  animate();
 })();
