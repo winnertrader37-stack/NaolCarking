@@ -1,13 +1,9 @@
 
 :root {
-  --gold: #e6c56b;
-  --gold-bright: #ffdf82;
-  --green: #36c98b;
-  --red: #ff5757;
-  --panel: rgba(12, 17, 18, .84);
-  --border: rgba(230, 197, 107, .72);
-  --text: #f7f7f4;
-  --muted: #aeb7b7;
+  --gold: #d8bd70;
+  --gold2: #f4df9b;
+  --panel: rgba(10, 13, 14, .9);
+  --line: rgba(216, 189, 112, .7);
 }
 
 * {
@@ -16,619 +12,460 @@
 }
 
 html, body {
+  margin: 0;
   width: 100%;
   height: 100%;
-  margin: 0;
   overflow: hidden;
-  background: #101512;
-  color: var(--text);
-  font-family: Inter, Arial, sans-serif;
-  user-select: none;
-  -webkit-user-select: none;
+  background: #090d11;
+  color: #f4f1e9;
+  font-family: Arial, Helvetica, sans-serif;
   touch-action: none;
+  user-select: none;
 }
 
-body {
+canvas#world {
   position: fixed;
   inset: 0;
-}
-
-canvas {
   display: block;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
 }
 
-button {
-  color: var(--text);
-  background: linear-gradient(145deg, #252b2b, #111616);
-  border: 1px solid var(--border);
-  border-radius: 11px;
-  padding: 10px 13px;
-  font: 700 12px Arial, sans-serif;
-  letter-spacing: .35px;
-  cursor: pointer;
-  touch-action: none;
-  box-shadow: 0 3px 12px #0005;
-}
-
-button:active,
-button.on {
-  background: var(--gold);
-  color: #171713;
-}
-
-button:focus-visible {
-  outline: 2px solid white;
-  outline-offset: 2px;
+.glass, .brand, .speed-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 25px #0005;
+  backdrop-filter: blur(8px);
+  border-radius: 18px;
 }
 
 #hud {
   position: fixed;
-  z-index: 3;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  inset: 12px 12px auto;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 10px;
+  z-index: 4;
   pointer-events: none;
 }
 
-.hud-brand,
-.hud-panel,
-#pauseBtn,
-.glass {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 5px 20px #0004;
+.brand {
+  padding: 12px 15px;
+  letter-spacing: 1.5px;
 }
 
-.hud-brand {
-  padding: 11px 14px;
+.brand b { font-size: 20px; }
+
+.brand em {
+  font-style: normal;
+  color: var(--gold2);
 }
 
-.hud-brand strong {
-  display: block;
-  font-size: 17px;
-  letter-spacing: 1.2px;
-}
-
-.hud-brand strong span,
-#card h1 span {
-  color: var(--gold-bright);
-}
-
-.hud-brand small {
+.brand small {
   display: block;
   margin-top: 5px;
-  color: var(--muted);
+  color: #a9aaa8;
   font-size: 9px;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
 }
 
-.hud-right {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  pointer-events: auto;
+.speed-card {
+  width: 230px;
+  padding: 10px 14px;
 }
 
-.hud-panel {
-  min-width: 130px;
-  padding: 7px 12px;
-}
-
-#spd {
-  display: inline-block;
-  min-width: 46px;
-  font-size: 31px;
-  font-weight: 900;
+.speed-card strong {
+  font-size: 38px;
   line-height: 1;
 }
 
-.hud-panel > small {
-  color: var(--muted);
-  font-size: 9px;
+.speed-card > span {
+  float: right;
+  margin: 12px 45px 0 0;
+  color: #aeb2b3;
+  font-size: 12px;
 }
 
-.hud-sub {
+.gearline {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 6px;
-  font-size: 10px;
-}
-
-#engineState {
-  color: var(--gold-bright);
-  font-size: 9px;
-}
-
-#rpm {
-  height: 5px;
-  margin-top: 7px;
-  overflow: hidden;
-  background: #343a39;
-  border-radius: 5px;
-}
-
-#rpmb {
-  width: 0;
-  height: 100%;
-  background: linear-gradient(90deg, #36c98b, #ffdf82, #ff5757);
-}
-
-#pauseBtn {
-  width: 42px;
-  height: 42px;
-  font-size: 17px;
-}
-
-#stats {
-  position: fixed;
-  z-index: 3;
-  top: 102px;
-  left: 12px;
-  width: 160px;
-  padding: 10px;
-  pointer-events: none;
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px solid #ffffff12;
-  font-size: 10px;
-}
-
-.stat-row:last-child {
-  border-bottom: 0;
-}
-
-.stat-row span {
-  color: var(--muted);
-}
-
-.stat-row b {
-  color: var(--gold-bright);
-}
-
-#cams {
-  position: fixed;
-  z-index: 4;
-  top: 94px;
-  right: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-width: 112px;
-}
-
-#cams button {
-  padding: 8px 9px;
-  font-size: 10px;
-}
-
-#mm {
-  position: fixed;
-  z-index: 3;
-  top: 275px;
-  left: 12px;
-  width: 112px;
-  height: 112px;
-  border: 2px solid var(--gold);
-  border-radius: 12px;
-  background: #17211b;
-  pointer-events: none;
-}
-
-#driveControls {
-  position: fixed;
-  z-index: 4;
-  inset: 0;
-  pointer-events: none;
-}
-
-#wheel {
-  position: absolute;
-  left: 20px;
-  bottom: 20px;
-  width: clamp(100px, 19vw, 155px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  touch-action: none;
-  pointer-events: auto;
-  filter: drop-shadow(0 6px 10px #0007);
-}
-
-#wheel svg {
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.pedal {
-  position: absolute;
-  bottom: 22px;
-  display: flex;
-  flex-direction: column;
+  gap: 18px;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  pointer-events: auto;
-  border-radius: 12px;
-  background: repeating-linear-gradient(
-    135deg, #343a3b 0 6px, #202525 6px 12px
-  );
+  margin-top: 8px;
+  font-size: 12px;
+  color: #bfc2c1;
 }
 
-.pedal span {
-  font-size: 21px;
-}
+.gearline b { color: white; }
 
-.pedal small {
-  font-size: 9px;
-}
-
-#pb {
-  right: 105px;
-  width: 58px;
-  height: 82px;
-}
-
-#pg {
-  right: 20px;
-  width: 68px;
-  height: 120px;
-}
-
-#vehiclePanel {
-  position: fixed;
-  z-index: 3;
-  right: 12px;
-  bottom: 158px;
-  width: 190px;
-  padding: 10px;
-  pointer-events: auto;
-}
-
-.vehicle-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 5px;
+.gearline span:last-child {
+  margin-left: auto;
+  color: var(--gold2);
   font-size: 11px;
 }
 
-.vehicle-heading > span {
-  color: var(--green);
-  font-size: 9px;
+.meter {
+  height: 5px;
+  background: #3b3e3e;
+  border-radius: 8px;
+  margin-top: 9px;
+  overflow: hidden;
 }
 
-.vehicle-data {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-  margin: 10px 0;
-  color: var(--muted);
-  font-size: 10px;
+.meter i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(
+    90deg, #6b9d74, var(--gold2), #e15b47
+  );
+  transition: width .12s linear;
 }
 
-.vehicle-data b {
-  color: white;
-}
-
-#engineBtn {
-  width: 100%;
-  font-size: 10px;
-}
-
-#playerControls {
-  display: none;
+#player-card {
   position: fixed;
   z-index: 4;
-  inset: 0;
+  left: 12px;
+  top: 110px;
+  width: 238px;
+  padding: 10px 12px;
   pointer-events: none;
 }
 
-#movePad {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  width: 138px;
-  height: 138px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 5px;
-  pointer-events: auto;
-}
-
-#movePad button {
-  padding: 4px;
-  background: #121919db;
-}
-
-#moveUp { grid-column: 2; grid-row: 1; }
-#moveLeft { grid-column: 1; grid-row: 2; }
-#moveDown { grid-column: 2; grid-row: 3; }
-#moveRight { grid-column: 3; grid-row: 2; }
-
-#actionButtons {
-  position: absolute;
-  right: 15px;
-  bottom: 20px;
+#player-card > div {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 7px;
-  width: min(240px, 45vw);
-  pointer-events: auto;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #ffffff12;
+  font-size: 13px;
 }
 
-#actionButtons button {
-  min-width: 88px;
-  font-size: 10px;
-}
+#player-card > div:last-child { border: 0; }
 
-#menu,
-#start {
+#player-card span { color: #a9adad; }
+
+#player-card b { color: var(--gold2); }
+
+#vehicle-card {
   position: fixed;
-  z-index: 10;
-  inset: 0;
+  z-index: 4;
+  right: 140px;
+  top: 115px;
+  width: 280px;
+  padding: 13px;
+  pointer-events: auto;
+}
+
+.vc-head, .vc-stats {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 18px;
 }
 
-#menu {
-  display: none;
-  background: #050807eF;
+.vc-head span {
+  color: #6fd0a4;
+  font-size: 12px;
 }
 
-#mp,
-#card {
-  width: min(100%, 390px);
-  padding: 25px;
-  border: 1px solid var(--gold);
-  border-radius: 19px;
-  background: linear-gradient(145deg, #202725f5, #080b0af7);
-  box-shadow: 0 15px 60px #0009;
-  text-align: center;
+.vc-stats {
+  margin-top: 14px;
+  color: #aeb3b1;
+  font-size: 13px;
 }
 
-#mt {
-  margin: 0 0 18px;
-  color: var(--gold-bright);
+.vc-stats b { color: #fff; }
+
+.mode-label {
+  margin-top: 15px;
+  color: #aeb3b1;
+  font-size: 12px;
 }
 
-#mc {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 16px;
+.mode-label b {
+  display: block;
+  color: #fff;
+  margin-top: 3px;
 }
 
-#mx {
+button {
+  font: inherit;
+  color: #f7f4ec;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: linear-gradient(135deg, #292d2c, #101313);
+  border-radius: 13px;
+  box-shadow: 0 3px 10px #0005;
+  touch-action: none;
+}
+
+button:active { transform: scale(.97); }
+
+#engine-btn {
   width: 100%;
+  height: 52px;
+  margin-top: 13px;
+  font-weight: bold;
+  letter-spacing: .4px;
 }
 
-#start {
-  z-index: 20;
-  background:
-    linear-gradient(180deg, #173d2c88, #080b0cf0),
-    #101512;
-  overflow-y: auto;
+#camera-buttons {
+  position: fixed;
+  right: 12px;
+  top: 120px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
 
-#card {
+#camera-buttons button {
+  min-width: 105px;
+  padding: 10px 12px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+#camera-buttons button.active {
+  background: linear-gradient(135deg, #f2d98c, #b89442);
+  color: #171714;
+}
+
+/* Steering wheel: visible, premium leather-style finish */
+#wheel {
+  position: fixed;
+  z-index: 6;
+  left: 18px;
+  bottom: 22px;
+  width: 145px;
+  aspect-ratio: 1;
+  touch-action: none;
+  filter: drop-shadow(0 8px 10px #0009);
+  will-change: transform;
+  transform-origin: center center;
+  background: radial-gradient(
+    circle, #30302d 0%, #17191b 62%, #090a0b 100%
+  );
+  border: 2px solid #8b7d65;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 4px #292a29,
+    inset 0 0 0 8px #111,
+    0 0 0 2px #4e4941;
+  display: grid;
+  place-items: center;
+}
+
+#wheel svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+#pedals {
+  position: fixed;
+  z-index: 6;
+  right: 18px;
+  bottom: 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+#pedals button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 13px;
-  margin: auto;
+  justify-content: center;
+  gap: 10px;
+  font-size: 26px;
+  font-weight: bold;
+  background: repeating-linear-gradient(
+    135deg, #303536 0 10px, #1b1e1f 10px 20px
+  );
+  border: 2px solid #77715f;
+  box-shadow: inset 0 0 0 2px #080909, 0 5px 15px #0007;
 }
 
-.logo-mark {
+#pedals small {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+#brake { width: 82px; height: 100px; }
+
+#accelerate { width: 100px; height: 145px; }
+
+/* Enter / exit button */
+#exit-btn {
+  position: fixed;
+  right: 12px;
+  bottom: 180px;
+  z-index: 7;
+  padding: 10px 13px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+#touch-hint {
+  position: fixed;
+  z-index: 3;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #ffffff80;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
   display: grid;
   place-items: center;
-  width: 62px;
-  height: 62px;
-  border: 2px solid var(--gold);
-  border-radius: 18px;
-  color: var(--gold-bright);
-  font-size: 24px;
-  font-weight: 900;
-  transform: rotate(-5deg);
+  background: #090d11;
 }
 
-#card h1 {
-  margin: 0;
-  font-size: clamp(26px, 6vw, 38px);
-}
-
-#card p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 1px;
-}
-
-.start-info {
+.load-card {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 7px;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 25px 35px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #111718;
 }
 
-.start-info span {
-  padding: 6px 8px;
-  border: 1px solid #ffffff25;
-  border-radius: 7px;
-  color: var(--muted);
-  font-size: 9px;
+.load-card b {
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--gold2);
 }
 
-#go,
-#up {
-  width: 100%;
-  padding: 13px;
+.load-card span {
+  color: #c5c9c7;
+  font-size: 13px;
 }
 
-#go {
-  background: linear-gradient(135deg, #ffe49b, #c79d37);
-  color: #171713;
+#message {
+  position: fixed;
+  z-index: 10;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #080b0ddd;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 18px;
+  display: none;
+  text-align: center;
+  max-width: 85vw;
 }
 
-#card > small {
-  color: var(--muted);
-  font-size: 9px;
-  line-height: 1.6;
-}
+/* Mobile */
+@media (max-width: 700px) {
+  .brand { padding: 8px 10px; }
+  .brand b { font-size: 14px; }
+  .brand small { font-size: 7px; }
 
-@media (orientation: portrait) {
-  .hud-brand {
-    padding: 8px;
+  .speed-card { width: 155px; padding: 8px; }
+  .speed-card strong { font-size: 29px; }
+  .speed-card > span {
+    margin: 8px 18px 0 0;
+    font-size: 10px;
   }
 
-  .hud-brand strong {
-    font-size: 13px;
+  .gearline { gap: 8px; font-size: 10px; }
+
+  #player-card {
+    top: 82px;
+    width: 154px;
+    padding: 7px 9px;
   }
 
-  .hud-brand small {
-    font-size: 7px;
+  #player-card > div {
+    font-size: 10px;
+    padding: 6px 0;
   }
 
-  #stats {
-    top: 95px;
-    width: 137px;
+  #vehicle-card {
+    top: 205px;
+    right: 8px;
+    width: 165px;
+    padding: 9px;
+    font-size: 12px;
   }
 
-  #mm {
-    top: 258px;
-    width: 95px;
-    height: 95px;
+  .vc-stats {
+    font-size: 10px;
+    margin-top: 9px;
   }
 
-  #cams {
-    top: 92px;
+  .mode-label { margin-top: 9px; }
+
+  #engine-btn {
+    height: 40px;
+    font-size: 10px;
+    margin-top: 8px;
   }
 
-  #vehiclePanel {
-    right: 10px;
-    bottom: 155px;
-    width: 158px;
-    padding: 8px;
+  #camera-buttons {
+    top: 82px;
+    right: 8px;
+    gap: 5px;
+  }
+
+  #camera-buttons button {
+    min-width: 78px;
+    padding: 8px 5px;
+    font-size: 10px;
   }
 
   #wheel {
+    width: 108px;
     left: 12px;
-    bottom: 17px;
-    width: 112px;
+    bottom: 13px;
   }
 
-  #pb {
-    right: 83px;
-    width: 49px;
-    height: 72px;
+  #brake { width: 60px; height: 78px; }
+  #accelerate { width: 72px; height: 110px; }
+
+  #pedals {
+    right: 9px;
+    bottom: 13px;
+    gap: 5px;
   }
 
-  #pg {
-    right: 12px;
-    width: 61px;
-    height: 100px;
+  #pedals button {
+    font-size: 20px;
+    gap: 6px;
   }
+
+  #pedals small { font-size: 9px; }
+
+  #exit-btn {
+    right: 9px;
+    bottom: 132px;
+    padding: 8px;
+    font-size: 9px;
+  }
+
+  #touch-hint { display: none; }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  #hud {
-    top: 7px;
-    left: 8px;
-    right: 8px;
-  }
-
-  .hud-brand {
-    padding: 6px 9px;
-  }
-
-  .hud-brand strong {
-    font-size: 13px;
-  }
-
-  .hud-brand small {
-    font-size: 7px;
-  }
-
-  .hud-panel {
-    padding: 5px 8px;
-  }
-
-  #spd {
-    font-size: 24px;
-  }
-
-  #stats {
-    top: 70px;
-    left: 8px;
-    width: 132px;
-    padding: 6px;
-  }
-
-  #mm {
-    top: 230px;
-    left: 8px;
-    width: 82px;
-    height: 82px;
-  }
-
-  #cams {
-    top: 65px;
-    right: 8px;
-    gap: 4px;
-  }
-
-  #cams button {
-    padding: 5px 7px;
-  }
-
-  #wheel {
-    left: 12px;
-    bottom: 10px;
-    width: 95px;
-  }
-
-  #pb {
-    right: 83px;
-    bottom: 10px;
-    height: 62px;
-  }
-
-  #pg {
-    right: 10px;
-    bottom: 10px;
-    height: 86px;
-  }
-
-  #vehiclePanel {
-    right: 95px;
-    bottom: 82px;
-    width: 165px;
-    padding: 7px;
-  }
-
-  .vehicle-data {
-    margin: 5px 0;
-  }
-
-  #actionButtons {
-    right: 10px;
-    bottom: 10px;
-    width: 220px;
-  }
+  #wheel { width: 98px; bottom: 10px; }
+  #pedals { bottom: 10px; }
+  #brake { height: 70px; }
+  #accelerate { height: 95px; }
+  #player-card { top: 90px; }
+  #vehicle-card { top: 95px; }
+  #camera-buttons { top: 95px; }
+  #exit-btn { bottom: 115px; }
+  #touch-hint { display: none; }
 }
